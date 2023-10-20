@@ -1,0 +1,35 @@
+name: release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js 18.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          registry-url: 'https://registry.npmjs.org'
+      - name: Validate Tag Format
+        run: |
+          TAG_FORMAT="^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$"
+          if [[ ! "${{ github.ref }}" =~ $TAG_FORMAT ]]; then
+            echo "The tag format is not correct!"
+            exit 1
+          fi
+      - name: Set Version in package.json
+        run: |
+          VERSION=$(echo ${{ github.ref }} | sed -e 's/refs\/tags\/v//')
+          jq ".version=\"$VERSION\"" package.json > package.temp.json
+          mv package.temp.json package.json
+      - name: Install Dependencies
+        run: yarn
+      - name: Publish to NPM
+        run: yarn npm publish --access public
+        env:
+          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
