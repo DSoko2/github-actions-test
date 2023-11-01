@@ -1,8 +1,9 @@
 name: release
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "v*.*.*"
 
 jobs:
   publish:
@@ -29,6 +30,15 @@ jobs:
           mv package.temp.json package.json
       - name: Install Dependencies
         run: yarn
+      - name: Build packages
+        run: yarn pack
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            *.tgz
+            LICENSE
+          generate_release_notes: true
       - name: Publish to NPM
         run: yarn npm publish --access public
         env:
